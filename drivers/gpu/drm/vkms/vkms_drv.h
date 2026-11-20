@@ -20,6 +20,9 @@
 
 static const u32 vkms_formats[] = {
 	DRM_FORMAT_XRGB8888,
+	DRM_FORMAT_ARGB8888,
+	DRM_FORMAT_XBGR8888,
+	DRM_FORMAT_ABGR8888,
 };
 
 struct vkms_output {
@@ -41,6 +44,7 @@ struct vkms_gem_object {
 	struct drm_gem_object gem;
 	struct mutex pages_lock; /* Page lock used in page fault handler */
 	struct page **pages;
+	struct sg_table *table;
 };
 
 #define drm_crtc_to_vkms_output(target) \
@@ -71,5 +75,13 @@ int vkms_dumb_map(struct drm_file *file, struct drm_device *dev,
 		  u32 handle, u64 *offset);
 
 void vkms_gem_free_object(struct drm_gem_object *obj);
+
+struct drm_gem_object *vkms_prime_import(struct drm_device *dev,
+					 struct dma_buf *dma_buf);
+
+struct drm_gem_object *
+vkms_prime_import_sg_table(struct drm_device *dev,
+			   struct dma_buf_attachment *attach,
+			   struct sg_table *sg);
 
 #endif /* _VKMS_DRV_H_ */

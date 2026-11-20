@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0+
 
 #include <linux/shmem_fs.h>
+#include <linux/dma-buf.h>
+#include <drm/drm_prime.h>
 
 #include "vkms_drv.h"
 
@@ -33,6 +35,10 @@ void vkms_gem_free_object(struct drm_gem_object *obj)
 
 	kvfree(gem->pages);
 	mutex_destroy(&gem->pages_lock);
+
+	if (obj->import_attach)
+		drm_prime_gem_destroy(obj, gem->table);
+
 	drm_gem_object_release(obj);
 	kfree(gem);
 }
@@ -168,4 +174,37 @@ unref:
 	drm_gem_object_put_unlocked(obj);
 
 	return ret;
+}
+
+struct drm_gem_object *vkms_prime_import(struct drm_device *dev,
+					 struct dma_buf *dma_buf)
+{
+	struct vkms_device *vkms = drm_device_to_vkms_device(dev);
+
+	return drm_gem_prime_import_dev(dev, dma_buf, &vkms->platform->dev);
+}
+
+struct drm_gem_object *
+vkms_prime_import_sg_table(struct drm_device *dev,
+			   struct dma_buf_attachment *attach,
+			   struct sg_table *sg)
+{
+	struct vkms_gem_object *obj;
+	int npages;
+
+	obj = __vkms_gem_create(dev, attach->dmabuf->size);
+	if (IS_ERR(obj))
+		return ERR_CAST(obj);
+
+	npages = PAGE_ALIGN(attach->dmabuf->size) / PAGE_SIZE;
+
+	obj->table = sg;
+	obj->pages = kvmalloc_array(npages, sizeof(struct page *), GFP_KERNEL);
+	if (!obj->pages) {
+		vkms_gem_free_object(&obj->gem);
+		return ERR_PTR(-ENOMEM);
+	}
+
+	drm_prime_sg_to_page_addr_arrays(obj->table, obj->pages, NULL, npages);
+	return &obj->gem;
 }

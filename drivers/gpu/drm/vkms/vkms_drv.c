@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0+
 
 #include <linux/module.h>
+#include <linux/dma-mapping.h>
 #include <drm/drm_gem.h>
+#include <drm/drm_prime.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_atomic_helper.h>
 #include <drm/drm_gem_framebuffer_helper.h>
@@ -44,7 +46,7 @@ static void vkms_release(struct drm_device *dev)
 }
 
 static struct drm_driver vkms_driver = {
-	.driver_features	= DRIVER_MODESET | DRIVER_ATOMIC | DRIVER_GEM,
+	.driver_features	= DRIVER_MODESET | DRIVER_ATOMIC | DRIVER_GEM | DRIVER_PRIME,
 	.release		= vkms_release,
 	.fops			= &vkms_driver_fops,
 	.dumb_create		= vkms_dumb_create,
@@ -52,6 +54,11 @@ static struct drm_driver vkms_driver = {
 	.gem_vm_ops		= &vkms_gem_vm_ops,
 	.gem_free_object_unlocked = vkms_gem_free_object,
 	.get_vblank_timestamp	= vkms_get_vblank_timestamp,
+
+	.prime_handle_to_fd	= drm_gem_prime_handle_to_fd,
+	.prime_fd_to_handle	= drm_gem_prime_fd_to_handle,
+	.gem_prime_import	= vkms_prime_import,
+	.gem_prime_import_sg_table = vkms_prime_import_sg_table,
 
 	.name			= DRIVER_NAME,
 	.desc			= DRIVER_DESC,
@@ -88,16 +95,19 @@ static int __init vkms_init(void)
 	if (!vkms_device)
 		return -ENOMEM;
 
-	ret = drm_dev_init(&vkms_device->drm, &vkms_driver, NULL);
-	if (ret)
-		goto out_free;
-
 	vkms_device->platform =
 		platform_device_register_simple(DRIVER_NAME, -1, NULL, 0);
 	if (IS_ERR(vkms_device->platform)) {
 		ret = PTR_ERR(vkms_device->platform);
-		goto out_fini;
+		goto out_free;
 	}
+
+	dma_coerce_mask_and_coherent(&vkms_device->platform->dev,
+				     DMA_BIT_MASK(64));
+
+	ret = drm_dev_init(&vkms_device->drm, &vkms_driver, &vkms_device->platform->dev);
+	if (ret)
+		goto out_unregister;
 
 	vkms_device->drm.irq_enabled = true;
 

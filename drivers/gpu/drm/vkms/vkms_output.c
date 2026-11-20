@@ -24,10 +24,20 @@ static const struct drm_encoder_funcs vkms_encoder_funcs = {
 
 static int vkms_conn_get_modes(struct drm_connector *connector)
 {
+	struct drm_display_mode *mode;
 	int count;
 
 	count = drm_add_modes_noedid(connector, XRES_MAX, YRES_MAX);
-	drm_set_preferred_mode(connector, XRES_DEF, YRES_DEF);
+
+	/* Add native 720x1600 @ 60Hz mode for Redmi 9A blossom panel */
+	mode = drm_cvt_mode(connector->dev, 720, 1600, 60, false, false, false);
+	if (mode) {
+		mode->type |= DRM_MODE_TYPE_PREFERRED;
+		drm_mode_probed_add(connector, mode);
+		count++;
+	} else {
+		drm_set_preferred_mode(connector, XRES_DEF, YRES_DEF);
+	}
 
 	return count;
 }
