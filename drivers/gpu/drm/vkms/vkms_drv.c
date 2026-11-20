@@ -57,8 +57,15 @@ static struct drm_driver vkms_driver = {
 
 	.prime_handle_to_fd	= drm_gem_prime_handle_to_fd,
 	.prime_fd_to_handle	= drm_gem_prime_fd_to_handle,
+	.gem_prime_export	= drm_gem_prime_export,
 	.gem_prime_import	= vkms_prime_import,
 	.gem_prime_import_sg_table = vkms_prime_import_sg_table,
+	.gem_prime_pin		= vkms_prime_pin,
+	.gem_prime_unpin	= vkms_prime_unpin,
+	.gem_prime_get_sg_table	= vkms_prime_get_sg_table,
+	.gem_prime_vmap		= vkms_prime_vmap,
+	.gem_prime_vunmap	= vkms_prime_vunmap,
+	.gem_prime_mmap		= vkms_prime_mmap,
 
 	.name			= DRIVER_NAME,
 	.desc			= DRIVER_DESC,

@@ -44,6 +44,7 @@ struct vkms_gem_object {
 	struct drm_gem_object gem;
 	struct mutex pages_lock; /* Page lock used in page fault handler */
 	struct page **pages;
+	unsigned int pages_pin_count;
 	struct sg_table *table;
 };
 
@@ -83,5 +84,12 @@ struct drm_gem_object *
 vkms_prime_import_sg_table(struct drm_device *dev,
 			   struct dma_buf_attachment *attach,
 			   struct sg_table *sg);
+
+int vkms_prime_pin(struct drm_gem_object *obj);
+void vkms_prime_unpin(struct drm_gem_object *obj);
+struct sg_table *vkms_prime_get_sg_table(struct drm_gem_object *obj);
+void *vkms_prime_vmap(struct drm_gem_object *obj);
+void vkms_prime_vunmap(struct drm_gem_object *obj, void *vaddr);
+int vkms_prime_mmap(struct drm_gem_object *obj, struct vm_area_struct *vma);
 
 #endif /* _VKMS_DRV_H_ */

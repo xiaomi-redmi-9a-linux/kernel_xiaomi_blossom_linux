@@ -2,6 +2,8 @@
 
 #include <linux/shmem_fs.h>
 #include <linux/dma-buf.h>
+#include <linux/vmalloc.h>
+#include <linux/mm.h>
 #include <drm/drm_prime.h>
 
 #include "vkms_drv.h"
@@ -33,7 +35,15 @@ void vkms_gem_free_object(struct drm_gem_object *obj)
 	struct vkms_gem_object *gem = container_of(obj, struct vkms_gem_object,
 						   gem);
 
-	kvfree(gem->pages);
+	mutex_lock(&gem->pages_lock);
+	if (gem->pages) {
+		if (obj->import_attach)
+			kvfree(gem->pages);
+		else
+			drm_gem_put_pages(obj, gem->pages, true, false);
+		gem->pages = NULL;
+	}
+	mutex_unlock(&gem->pages_lock);
 	mutex_destroy(&gem->pages_lock);
 
 	if (obj->import_attach)
@@ -207,4 +217,108 @@ vkms_prime_import_sg_table(struct drm_device *dev,
 
 	drm_prime_sg_to_page_addr_arrays(obj->table, obj->pages, NULL, npages);
 	return &obj->gem;
+}
+
+static struct page **vkms_pin_pages(struct vkms_gem_object *bo)
+{
+	mutex_lock(&bo->pages_lock);
+	if (bo->pages_pin_count++ == 0) {
+		struct page **pages;
+
+		if (bo->pages) {
+			mutex_unlock(&bo->pages_lock);
+			return bo->pages;
+		}
+
+		pages = drm_gem_get_pages(&bo->gem);
+		if (IS_ERR(pages)) {
+			bo->pages_pin_count--;
+			mutex_unlock(&bo->pages_lock);
+			return pages;
+		}
+
+		bo->pages = pages;
+	}
+	mutex_unlock(&bo->pages_lock);
+
+	return bo->pages;
+}
+
+static void vkms_unpin_pages(struct vkms_gem_object *bo)
+{
+	mutex_lock(&bo->pages_lock);
+	if (--bo->pages_pin_count == 0) {
+		if (!bo->gem.import_attach) {
+			drm_gem_put_pages(&bo->gem, bo->pages, true, false);
+			bo->pages = NULL;
+		}
+	}
+	mutex_unlock(&bo->pages_lock);
+}
+
+int vkms_prime_pin(struct drm_gem_object *obj)
+{
+	struct vkms_gem_object *bo = container_of(obj, struct vkms_gem_object, gem);
+	struct page **pages = vkms_pin_pages(bo);
+	return PTR_ERR_OR_ZERO(pages);
+}
+
+void vkms_prime_unpin(struct drm_gem_object *obj)
+{
+	struct vkms_gem_object *bo = container_of(obj, struct vkms_gem_object, gem);
+	vkms_unpin_pages(bo);
+}
+
+struct sg_table *vkms_prime_get_sg_table(struct drm_gem_object *obj)
+{
+	struct vkms_gem_object *bo = container_of(obj, struct vkms_gem_object, gem);
+	int npages = PAGE_ALIGN(obj->size) / PAGE_SIZE;
+
+	if (bo->table)
+		return bo->table;
+
+	return drm_prime_pages_to_sg(bo->pages, npages);
+}
+
+void *vkms_prime_vmap(struct drm_gem_object *obj)
+{
+	struct vkms_gem_object *bo = container_of(obj, struct vkms_gem_object, gem);
+	long n_pages = obj->size >> PAGE_SHIFT;
+	struct page **pages;
+
+	pages = vkms_pin_pages(bo);
+	if (IS_ERR(pages))
+		return NULL;
+
+	return vmap(pages, n_pages, 0, PAGE_KERNEL);
+}
+
+void vkms_prime_vunmap(struct drm_gem_object *obj, void *vaddr)
+{
+	struct vkms_gem_object *bo = container_of(obj, struct vkms_gem_object, gem);
+
+	vunmap(vaddr);
+	vkms_unpin_pages(bo);
+}
+
+int vkms_prime_mmap(struct drm_gem_object *obj,
+		    struct vm_area_struct *vma)
+{
+	int ret;
+
+	if (obj->size < vma->vm_end - vma->vm_start)
+		return -EINVAL;
+
+	if (!obj->filp)
+		return -ENODEV;
+
+	ret = call_mmap(obj->filp, vma);
+	if (ret)
+		return ret;
+
+	fput(vma->vm_file);
+	vma->vm_file = get_file(obj->filp);
+	vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
+
+	return 0;
 }
