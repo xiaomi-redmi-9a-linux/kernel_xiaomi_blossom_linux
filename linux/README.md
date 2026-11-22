@@ -15,13 +15,13 @@ Native GNU/Linux port for the Xiaomi Redmi 9A (MediaTek Helio G25 / MT6765 / MT6
 | **Display** | SimpleFB / Framebuffer (`/dev/fb0`) | **Working** | 720 × 1600 resolution @ 60 Hz |
 | **GPU (3D Acceleration)** | PowerVR Rogue GE8320 (Series 8XE) | **Working** | Patched `libhybris` + DDK 1.13, ~395 FPS raw, 650 MHz DVFS |
 | **Touchscreen** | Novatek TS (`novatek_ts_djn_fw.bin`) | **Working** | Firmware embedded into kernel & ramdisk |
-| **Audio (Speaker)** | MediaTek DL2 ALSA SoC routing | **Working** | PipeWire / WirePlumber support |
+| **Audio (Speaker)** | MediaTek DL2 ALSA SoC routing | **Working** | PipeWire / WirePlumber support, hardware volume keys & statusbar indicator |
 | **Internal Wi-Fi** | MediaTek `wmt-wifi` / `mtk-wmt-loader` (`wlan0`) | **Working** | Loads MTK combo firmware & connects on boot |
 | **Internal Bluetooth** | MediaTek MT6631 Bluetooth 5.0 (`hci0` via `mtk-bt-bridge`) | **Working** | Native BlueZ 5.86 support, scanning & pairing |
 | **USB Tethering** | Linux ConfigFS RNDIS (`usb0`) | **Working** | Managed via `/usr/local/bin/usb-tether` |
 | **USB Serial Console** | Linux ConfigFS ACM (`ttyGS0`) | **Working** | Root shell on `/dev/ttyACM*` on PC |
 | **Direct Screen Shell** | OpenRC autologin on `/dev/tty1` | **Working** | Root prompt directly on phone display |
-| **Battery / PMIC** | Stock MTK Power Supply & Charger | **Working** | Battery percentage & charging active |
+| **Battery / PMIC** | MT6357 In-Kernel Autonomous Fuelgauge | **Working** | IR-compensated real-time OCV, PMIC RTC persistence & smooth stepping |
 | **Backlight Control** | MediaTek LCD Backlight (`lcd-backlight`) | **Working** | Controlled via `brightnessctl` |
 | **External USB Wi-Fi** | `ath9k_htc` & `rtl8822bu` | **Working** | Built-in kernel drivers |
 | **External USB BT** | `btusb` (Realtek RTL8761BU / TP-Link UB500) | **Working** | Built-in kernel drivers |

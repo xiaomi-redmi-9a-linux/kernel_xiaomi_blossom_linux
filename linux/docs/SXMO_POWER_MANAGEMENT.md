@@ -51,8 +51,9 @@ Custom hooks in [`linux/overlay/home/user/.config/sxmo/hooks/`](file:///media/pr
 
 ---
 
-## 3. Audio Clean-up Udev Rules
+## 3. Audio Clean-up Udev Rules & Device Profile
 
+### A. Udev Rules
 The stock MediaTek kernel creates numerous dummy ALSA PCM devices for proprietary modem/DSP routing (`pcmC1D2` through `pcmC1D3*`). These confuse standard ALSA, PipeWire, and WirePlumber audio servers.
 
 File: [`linux/overlay/etc/udev/rules.d/89-mtk-audio.rules`](file:///media/primaryHdd/Coding/Android/kernel_xiaomi_blossom_linux/linux/overlay/etc/udev/rules.d/89-mtk-audio.rules):
@@ -64,3 +65,20 @@ SUBSYSTEM=="sound", KERNEL=="pcmC1D2[0-9]*", RUN+="/bin/rm -f /dev/snd/%k"
 SUBSYSTEM=="sound", KERNEL=="pcmC1D3[0-9]*", RUN+="/bin/rm -f /dev/snd/%k"
 ```
 This isolates the primary functional DL2 stereo DAC node for clean speaker and headphone output.
+
+### B. Device Profile Audio Enablement
+File: [`linux/overlay/usr/bin/sxmo_deviceprofile_mediatek,MT6765.sh`](file:///media/primaryHdd/Coding/Android/kernel_xiaomi_blossom_linux/linux/overlay/usr/bin/sxmo_deviceprofile_mediatek,MT6765.sh):
+- Native audio is enabled by ensuring `SXMO_NO_AUDIO` is unset.
+- Enables the volume statusbar component (`set_volume` in `sxmo_hook_statusbar.sh`) displaying live speaker and microphone states.
+- Connects hardware volume buttons (`mtk-kpd` keys `KEY_VOLUMEUP` and `KEY_VOLUMEDOWN`) via `bonsaid` and `sxmo_hook_inputhandler.sh` to PipeWire's `pactl` volume control.
+
+---
+
+## 4. PMIC Fuelgauge & Battery Management
+
+The MT6765 port uses an in-kernel autonomous fuelgauge algorithm for the MT6357 PMIC, removing dependency on Android's userspace `healthd` / `android.hardware.health` service:
+- **Real-Time OCV Mapping:** Maps open-circuit battery voltage to accurate State of Charge (SoC) for the Redmi 9A BN56 5000 mAh Li-Po battery.
+- **Internal Resistance (IR) Compensation:** Uses real-time hardware current sensing (`GAUGE_PROP_BATTERY_CURRENT`) to dynamically offset voltage sags caused by the ~150 mΩ internal resistance under CPU/GPU load (`delta_V = I * R_int`).
+- **Low-Pass IIR Filtering:** Eliminates capacity jitter while ensuring fast recovery on sleep wakeups and immediate poweroff protection below 3450 mV.
+- **PMIC RTC Persistence:** Preserves last-known UI SoC across reboots and deep sleep states in hardware scratchpad registers (`GAUGE_PROP_RTC_UI_SOC`).
+
