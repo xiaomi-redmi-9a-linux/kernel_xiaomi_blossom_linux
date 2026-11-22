@@ -477,7 +477,10 @@ static long ion_sys_cache_sync(struct ion_client *client,
 	case ION_CACHE_CLEAN_BY_RANGE_USE_PA:
 	case ION_CACHE_INVALID_BY_RANGE_USE_PA:
 	case ION_CACHE_FLUSH_BY_RANGE_USE_PA:
-		sync_va = param->iova;
+		if (param->iova)
+			sync_va = param->iova;
+		else
+			sync_va = (unsigned long)param->va;
 		ret = m4u_mva_map_kernel(sync_va, sync_size,
 					 &kernel_va, &kernel_size);
 		if (ret)
@@ -499,7 +502,8 @@ static long ion_sys_cache_sync(struct ion_client *client,
 	if (sync_type == ION_CACHE_CLEAN_BY_RANGE_USE_PA ||
 	    sync_type == ION_CACHE_INVALID_BY_RANGE_USE_PA ||
 	    sync_type == ION_CACHE_FLUSH_BY_RANGE_USE_PA) {
-		m4u_mva_unmap_kernel((unsigned long)param->va,
+		unsigned long unmap_mva = param->iova ? param->iova : (unsigned long)param->va;
+		m4u_mva_unmap_kernel(unmap_mva,
 				     sync_size, sync_va);
 	} else if (ion_need_unmap_flag) {
 		ion_unmap_kernel(client, kernel_handle);

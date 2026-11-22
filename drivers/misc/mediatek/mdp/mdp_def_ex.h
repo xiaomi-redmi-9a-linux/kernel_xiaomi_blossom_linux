@@ -144,6 +144,7 @@ struct mdp_readback {
 
 #define CMDQ_IOCTL_ASYNC_EXEC _IOW(CMDQ_IOCTL_MAGIC_NUMBER, 20, \
 	struct mdp_submit)
+#define CMDQ_IOCTL_ASYNC_EXEC_32 0x41507814
 #define CMDQ_IOCTL_ASYNC_WAIT _IOR(CMDQ_IOCTL_MAGIC_NUMBER, 21, \
 	struct mdp_wait)
 
