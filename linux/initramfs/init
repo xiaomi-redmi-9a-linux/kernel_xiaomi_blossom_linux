@@ -48,11 +48,8 @@ mount -t proc proc /proc || fail "could not mount proc"
 mount -t sysfs sysfs /sys || fail "could not mount sysfs"
 echo "1 4 1 7" > /proc/sys/kernel/printk 2>/dev/null || true
 
-# console=ttyGS0 only selects a console; it does not create a USB gadget.
-# Bind an ACM function early so the host can capture boot output and reach
-# the emergency shell if storage or rootfs setup fails.
+# USB Gadget setup (configured for USB tethering on-demand, ACM serial disabled)
 USB_GADGET=/sys/kernel/config/usb_gadget/native-linux
-USB_GADGET_READY=0
 mkdir -p /sys/kernel/config
 if mount -t configfs none /sys/kernel/config 2>/dev/null; then
 	mkdir -p "${USB_GADGET}"
@@ -63,23 +60,13 @@ if mount -t configfs none /sys/kernel/config 2>/dev/null; then
 		printf "0x0200" > "${USB_GADGET}/bcdUSB" 2>/dev/null || true
 		mkdir -p "${USB_GADGET}/strings/0x409" \
 			"${USB_GADGET}/configs/c.1/strings/0x409" \
-			"${USB_GADGET}/functions/acm.usb0"
+			"${USB_GADGET}/functions/rndis.usb0"
 		printf "Xiaomi" > "${USB_GADGET}/strings/0x409/manufacturer" 2>/dev/null || true
 		printf "Redmi 9A Linux" > "${USB_GADGET}/strings/0x409/product" 2>/dev/null || true
 		printf "dandelion" > "${USB_GADGET}/strings/0x409/serialnumber" 2>/dev/null || true
-		printf "USB ACM console" > "${USB_GADGET}/configs/c.1/strings/0x409/configuration" 2>/dev/null || true
-		ln -s "${USB_GADGET}/functions/acm.usb0" "${USB_GADGET}/configs/c.1/acm.usb0" 2>/dev/null || true
-		for udc in /sys/class/udc/*; do
-			[ -e "${udc}" ] || continue
-			if printf "%s" "${udc##*/}" > "${USB_GADGET}/UDC" 2>/dev/null; then
-				USB_GADGET_READY=1
-				echo "USB ACM gadget bound to ${udc##*/}" >/dev/console
-				break
-			fi
-		done
+		printf "USB Tethering" > "${USB_GADGET}/configs/c.1/strings/0x409/configuration" 2>/dev/null || true
 	fi
 fi
-[ "${USB_GADGET_READY}" -eq 1 ] || echo "USB ACM gadget did not bind; check UDC/USB controller initialization." >/dev/console
 
 mkdir -p /mnt/sd /newroot || fail "could not create mount points"
 
@@ -207,13 +194,13 @@ if [ -d /lib/firmware ]; then
 	cp -an /lib/firmware/* /newroot/lib/firmware/ 2>/dev/null || true
 fi
 
-# Enable automatic root shell on tty1 (phone screen) and ttyGS0 (USB serial)
+# Enable automatic root shell on tty1 (phone screen)
 if [ -f /newroot/etc/inittab ]; then
 	sed -i 's/^[a-zA-Z0-9_]*:.*getty/#&/' /newroot/etc/inittab
 	sed -i '/::respawn:\/bin\/sh/d' /newroot/etc/inittab
 	sed -i '/::respawn:\/sbin\/getty/d' /newroot/etc/inittab
+	sed -i '/ttyGS0/d' /newroot/etc/inittab
 	echo "tty1::respawn:/bin/sh -l" >> /newroot/etc/inittab
-	echo "ttyGS0::respawn:/bin/sh -l" >> /newroot/etc/inittab
 fi
 rm -f /newroot/etc/runlevels/*/agetty* /newroot/etc/runlevels/*/getty* 2>/dev/null || true
 
