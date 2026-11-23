@@ -22,6 +22,7 @@ Native GNU/Linux port for the Xiaomi Redmi 9A (MediaTek Helio G25 / MT6765 / MT6
 | **USB Serial Console** | Linux ConfigFS ACM (`ttyGS0`) | **Working** | Root shell on `/dev/ttyACM*` on PC |
 | **Direct Screen Shell** | OpenRC autologin on `/dev/tty1` | **Working** | Root prompt directly on phone display |
 | **Battery / PMIC** | MT6357 In-Kernel Autonomous Fuelgauge | **Working** | IR-compensated real-time OCV, PMIC RTC persistence & smooth stepping |
+| **Power Management** | Runtime CPU Hotplug + Dynamic DVFS (`powersave`/`schedutil`) | **Working** | Powers down 7 cores on screenoff, 900 MHz clamp, instant 8-core restore on wake |
 | **Backlight Control** | MediaTek LCD Backlight (`lcd-backlight`) | **Working** | Controlled via `brightnessctl` |
 | **External USB Wi-Fi** | `ath9k_htc` & `rtl8822bu` | **Working** | Built-in kernel drivers |
 | **External USB BT** | `btusb` (Realtek RTL8761BU / TP-Link UB500) | **Working** | Built-in kernel drivers |
