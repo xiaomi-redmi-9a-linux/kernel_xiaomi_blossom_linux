@@ -513,20 +513,20 @@ PVRSRVConnectKM(CONNECTION_DATA *psConnection,
 #endif
 		if ( (ui32ClientBuildOptions & ui32BuildOptionsMismatch) != 0)
 		{
-			PVR_LOG(("(FAIL) %s: Mismatch in client-side and KM driver build options; "
-				"extra options present in client-side driver: (0x%x). Please check rgx_options.h",
+			PVR_LOG(("(WARN) %s: Mismatch in client-side and KM driver build options; "
+				"extra options present in client-side driver: (0x%x). Ignoring for compat.",
 				__func__,
 				ui32ClientBuildOptions & ui32BuildOptionsMismatch ));
-			PVR_GOTO_WITH_ERROR(eError, PVRSRV_ERROR_BUILD_OPTIONS_MISMATCH, chk_exit);
+			/* PVR_GOTO_WITH_ERROR(eError, PVRSRV_ERROR_BUILD_OPTIONS_MISMATCH, chk_exit); */
 		}
 
 		if ( (ui32BuildOptions & ui32BuildOptionsMismatch) != 0)
 		{
-			PVR_LOG(("(FAIL) %s: Mismatch in client-side and KM driver build options; "
-				"extra options present in KM driver: (0x%x). Please check rgx_options.h",
+			PVR_LOG(("(WARN) %s: Mismatch in client-side and KM driver build options; "
+				"extra options present in KM driver: (0x%x). Ignoring for compat.",
 				__func__,
 				ui32BuildOptions & ui32BuildOptionsMismatch ));
-			PVR_GOTO_WITH_ERROR(eError, PVRSRV_ERROR_BUILD_OPTIONS_MISMATCH, chk_exit);
+			/* PVR_GOTO_WITH_ERROR(eError, PVRSRV_ERROR_BUILD_OPTIONS_MISMATCH, chk_exit); */
 		}
 		if (IMG_FALSE == bIsFirstConnection)
 		{
@@ -558,13 +558,13 @@ PVRSRVConnectKM(CONNECTION_DATA *psConnection,
 	{
 		if (!psSRVData->sDriverInfo.bIsNoMatch)
 			psSRVData->sDriverInfo.bIsNoMatch = IMG_TRUE;
-		PVR_LOG(("(FAIL) %s: Incompatible driver DDK version (%u.%u) / client DDK version (%u.%u).",
+		PVR_LOG(("(WARN) %s: Incompatible driver DDK version (%u.%u) / client DDK version (%u.%u). Allowing connection for compat.",
 				__func__,
 				PVRVERSION_MAJ, PVRVERSION_MIN,
 				PVRVERSION_UNPACK_MAJ(ui32ClientDDKVersion),
 				PVRVERSION_UNPACK_MIN(ui32ClientDDKVersion)));
-		PVR_DBG_BREAK;
-		PVR_GOTO_WITH_ERROR(eError, PVRSRV_ERROR_DDK_VERSION_MISMATCH, chk_exit);
+		/* PVR_DBG_BREAK; */
+		/* PVR_GOTO_WITH_ERROR(eError, PVRSRV_ERROR_DDK_VERSION_MISMATCH, chk_exit); */
 	}
 	else
 	{
