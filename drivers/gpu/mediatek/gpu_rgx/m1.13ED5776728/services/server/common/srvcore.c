@@ -622,11 +622,11 @@ PVRSRVConnectKM(CONNECTION_DATA *psConnection,
 	{
 		if (!psSRVData->sDriverInfo.bIsNoMatch)
 			psSRVData->sDriverInfo.bIsNoMatch = IMG_TRUE;
-		PVR_DPF((PVR_DBG_WARNING, "%s: Mismatch in driver DDK revision (%d) / client DDK revision (%d).",
+		PVR_DPF((PVR_DBG_WARNING, "%s: Mismatch in driver DDK revision (%d) / client DDK revision (%d). Allowing for compat.",
 				__func__, ui32DDKBuild, ui32ClientDDKBuild));
 #if defined(PVRSRV_STRICT_COMPAT_CHECK)
-		PVR_DBG_BREAK;
-		PVR_GOTO_WITH_ERROR(eError, PVRSRV_ERROR_DDK_BUILD_MISMATCH, chk_exit);
+		/* PVR_DBG_BREAK; */
+		/* PVR_GOTO_WITH_ERROR(eError, PVRSRV_ERROR_DDK_BUILD_MISMATCH, chk_exit); */
 #endif
 	}
 	else
