@@ -76,12 +76,17 @@ cmd_boot() {
 }
 
 cmd_rootfs() {
-    if [ -f "${ROOTFS_DIR}/build-alpine-rootfs.sh" ]; then
-        log_info "Building Alpine Linux rootfs..."
-        bash "${ROOTFS_DIR}/build-alpine-rootfs.sh"
+    local script="${ROOT_DIR}/../xiaomi-redmi-9a-linux/scripts/build-alpine-rootfs.sh"
+    if [ ! -f "${script}" ]; then
+        script="${ROOTFS_DIR}/build-alpine-rootfs.sh"
+    fi
+
+    if [ -f "${script}" ]; then
+        log_info "Building Alpine Linux rootfs (${script})..."
+        bash "${script}" "${ROOTFS_DIR}/linux-rootfs.ext4"
         log_ok "Alpine rootfs ready: ${ROOTFS_DIR}/linux-rootfs.ext4"
     else
-        log_err "Alpine rootfs build script not found at ${ROOTFS_DIR}/build-alpine-rootfs.sh"
+        log_err "Alpine rootfs build script not found at ${script}"
         exit 1
     fi
 }
